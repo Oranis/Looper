@@ -1,0 +1,130 @@
+// This will take an led buttons signal and make it blink or stay solid
+
+long lastDebounceTime = 0;  // the last time the output pin was toggled
+long debounceDelay = 50;    // the debounce time; increase if the output flickers
+const int buttonPin = 8;    // the number of the pushbutton pin
+int buttonState;             // the current reading from the input pin
+int lastButtonState = LOW;   // the previous reading from the input pin
+
+// constants won't change. Used here to set a pin number :
+const int ledPin =  13;      // the number of the LED pin
+
+// Variables will change :
+int ledState = LOW;             // ledState used to set the LED
+
+// Generally, you should use "unsigned long" for variables that hold time
+// The value will quickly become too large for an int to store
+unsigned long previousMillis = 0;        // will store last time LED was updated
+
+// constants won't change :
+long interval = 0;           // interval at which to blink (milliseconds)
+
+int count = 1;   //checks if the button has been pressed before
+
+void read_switch();
+void blink_led();
+
+//int state = noLoad;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(ledPin, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLUP);
+}
+
+void loop() {
+  read_switch();
+  blink_led();
+}
+
+
+void read_switch() {
+  // read the state of the switch into a local variable:
+  int reading = digitalRead(buttonPin);   //switch on or off?
+  // check to see if you just pressed the button
+  // (i.e. the input went from LOW to HIGH),  and you've waited
+  // long enough since the last press to ignore any noise:
+
+  // If the switch changed, due to noise or pressing:
+  if (reading != lastButtonState) {
+    // reset the debouncing timer
+    lastDebounceTime = millis();    //saves the last time the button was pressed
+  }
+
+  
+  if ((millis() - lastDebounceTime) > debounceDelay) {
+    // whatever the reading is at, it's been there for longer
+    // than the debounce delay, so take it as the actual current state:
+
+    // if the button state has changed:
+    if (reading != buttonState) {
+      buttonState = reading;     
+
+      if (buttonState == LOW){
+        count++;
+        Serial.print(count);
+        switch (count)
+          {
+            case 1: //noLoad
+              interval = 0;    //keeps the button off
+              break;
+               
+            case 2:   //Rec
+              interval = 500;               //Flashes
+              break;
+        
+            case 3:   //Stop
+              interval = 1000;                 //Solid color
+              break;
+        
+            case 4:   //Play
+              interval = 7;              //Slow flash
+              count= count - 2;  //when button pressed again, will go to stop
+              break;
+  
+          }
+        delay(50);
+
+      }
+    }
+  }
+  // save the reading.  Next time through the loop,
+  // it'll be the lastButtonState:
+  lastButtonState = reading;
+
+
+  
+}
+
+void blink_led() {
+  // here is where you'd put code that needs to be running all the time.
+
+  // check to see if it's time to blink the LED; that is, if the
+  // difference between the current time and last time you blinked
+  // the LED is bigger than the interval at which you want to
+  // blink the LED.
+  unsigned long currentMillis = millis(); //local var
+  
+  if (currentMillis - previousMillis >= interval) {
+    // save the last time you blinked the LED
+    previousMillis = currentMillis;
+      
+    if (interval == 0)
+      ledState = LOW;
+    else if(interval == 7){
+      ledState = HIGH;
+    }
+    else {
+      // if the LED is off turn it on and vice-versa:
+      if (ledState == LOW) {
+        ledState = HIGH;
+      } else {
+        ledState = LOW;
+      }
+    }
+
+    // set the LED with the ledState of the variable:
+    digitalWrite(ledPin, ledState);
+  }
+}
+
