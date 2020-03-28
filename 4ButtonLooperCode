@@ -1,0 +1,210 @@
+// This will take an led buttons signal and make it blink or stay solid
+
+//WOULD BE good to make struct containting button, led and state information for each
+
+//enum State_enum {noLoad, Rec, stopRec, Play, Stop}; //states for state machine
+
+long lastDebounceTime[4] = {0,0,0,0};  // the last time the output pin was toggled
+long debounceDelay = 50;    // the debounce time; increase if the output flickers
+const int buttonPin[4] = {8,9,10,11};
+//const int buttonPinB = 8;    // the number of the Blue Button pin
+//const int buttonPinW = 9;    // the number of the White Button pin
+//const int buttonPinY = 10;    // the number of the Yellow Button pin
+//const int buttonPinR = 11;    // the number of the Red Button pin
+int buttonState[4];             // the current reading from the input pin
+int lastButtonState[4] = {LOW,LOW,LOW,LOW};   // the previous reading from the input pin
+
+// constants won't change. Used here to set a pin number :
+const int ledPin[4] =  {2,3,4,5};
+//const int ledPinB =  1;      // the number of the Blue LED pin
+//const int ledPinW =  2;      // the number of the White LED pin
+//const int ledPinY =  3;      // the number of the Yellow LED pin
+//const int ledPinR =  4;      // the number of the Red LED pin
+
+// Variables will change :
+int ledState[4] = {LOW,LOW,LOW,LOW};             // ledState used to set the LED
+
+// Generally, you should use "unsigned long" for variables that hold time
+// The value will quickly become too large for an int to store
+unsigned long previousMillis[4] = {0,0,0,0};        // will store last time LED was updated
+
+// constants won't change :
+long interval = 0;           // interval at which to blink (milliseconds)
+
+int count[4]= {1,1,1,1};   //initializes state count for each button
+int k,m;
+
+
+void read_switch(int wb);
+void blink_led(int wb2);
+void startup();
+//int which_button();
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(ledPin[0], OUTPUT);
+  pinMode(ledPin[1], OUTPUT);
+  pinMode(ledPin[2], OUTPUT);
+  pinMode(ledPin[3], OUTPUT);
+  pinMode(buttonPin[0], INPUT_PULLUP);
+  pinMode(buttonPin[1], INPUT_PULLUP);
+  pinMode(buttonPin[2], INPUT_PULLUP);
+  pinMode(buttonPin[3], INPUT_PULLUP);
+
+  startup();
+}
+
+void loop() {
+  for(m=0;m<4;m++){
+    read_switch(m);
+    blink_led(m);
+  }
+  
+}
+
+
+void read_switch(int wb) {
+
+// read the state of the switch into a local variable:
+  //int reading = digitalRead(buttonPin[wb]);   //switch on or off?
+  
+  int i;
+  int reading[4];
+  
+  //checks current state of all buttons
+//  for(i=0;i<4;i++){
+//     
+//  }
+  
+  //for(wb = 0; wb < 4; wb++){      //goes through each of the buttons to see if state has changed
+  // If the switch changed, due to noise or pressing:
+    reading[wb]= digitalRead(buttonPin[wb]);
+    
+    
+    if (reading[wb] != lastButtonState[wb]) {
+      // reset the debouncing timer
+      lastDebounceTime[wb] = millis();    //saves the last time the button was pressed
+    }
+  
+    
+    if ((millis() - lastDebounceTime[wb]) > debounceDelay) {  //This takes care of debounce
+  
+      // if the button state has changed:
+      if (reading[wb] != buttonState[wb]) {
+        buttonState[wb] = reading[wb];     
+        Serial.println("yo");
+        
+        if (buttonState[wb] == LOW){
+          count[wb]++;
+          Serial.println("hark");
+          switch (count[wb])
+            {
+              case 1: //noLoad
+                interval = 0;    //keeps the button off
+                break;
+                 
+              case 2:   //Rec
+                interval = 500;               //Flashes
+                break;
+          
+              case 3:   //Stop
+                interval = 1000;                 //Solid color
+                break;
+          
+              case 4:   //Play
+                interval = 7;              //Slow flash
+                count[wb]= count[wb] - 2;  //when button pressed again, will go to stop
+                break;
+    
+            }
+          delay(50);
+        }
+      }
+    }
+    
+    lastButtonState[wb] = reading[wb];  //saves last state to compare with current reading
+  
+}
+
+void blink_led(int wb2) {
+  //interval is passed to this in order to make the lights blink or stay on for a specific amount of time
+  
+  unsigned long currentMillis = millis(); //local var
+
+
+    if (currentMillis - previousMillis[wb2] >= interval) {
+      // save the last time you blinked the LED
+      previousMillis[wb2] = currentMillis;
+        
+      if (interval == 0)
+        ledState[wb2] = LOW;
+      else if(interval == 7){
+        ledState[wb2] = HIGH;
+      }
+      else {
+        // if the LED is off turn it on and vice-versa:
+        if (ledState[wb2] == LOW) {
+          ledState[wb2] = HIGH;
+        } else {
+          ledState[wb2] = LOW;
+        }
+      }
+  
+      // set the LED with the ledState of the variable:
+      digitalWrite(ledPin[wb2], ledState[wb2]);
+    }
+  
+}
+
+void startup(){
+//makes buttons blink twice in succession, then all light up before going dark
+
+  int i;
+  
+    for(k=0;k<4;k++){
+      digitalWrite(ledPin[k], HIGH);
+      delay(100);
+      digitalWrite(ledPin[k], LOW);
+      delay(100);
+      digitalWrite(ledPin[k], HIGH);
+      delay(100);
+      digitalWrite(ledPin[k], LOW);
+      delay(100);
+    }
+  
+    digitalWrite(ledPin[0], HIGH);
+    delay(100);
+    digitalWrite(ledPin[1], HIGH);
+    delay(100);
+    digitalWrite(ledPin[2], HIGH);
+    delay(100);
+    digitalWrite(ledPin[3], HIGH);
+    delay(200);
+
+//    for(i = 0; i < 4; i++) {      //initializes buttons
+//      reading[i]= digitalRead(buttonPin[i]);
+//    }
+
+}
+
+
+//int which_button(){
+//  int i,j;
+//  int checkbutt[3];
+//
+//  //checks current state of all buttons
+//  for(i=0;i<4;i++){
+//     checkbutt[i]= digitalRead(buttonPin[i]);
+//  }
+//
+//  //is there any change in any of the buttons
+////  for(j=0;j<4;j++){
+////     if (checkbutt[j] != lastButtonState[j]) {  //if the the state has changed
+////        lastDebounceTime[j] = millis();    //saves the last time the button was pressed
+////        read_switch(j); //not sure about this placement
+////      }
+////      
+////  }
+//
+// return checkbutt[0];
+//}
